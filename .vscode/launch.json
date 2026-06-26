@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug RTS Game",
+            "type": "cppdgb",
+            "request": "launch",
+            "program": "${workspaceFolder}/app.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "internalConsole",
+            "miDebuggerPath": "C:\\mingw64\\bin\\gdb.exe"
+        }
+    ]
+}

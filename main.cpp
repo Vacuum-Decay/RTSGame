@@ -22,27 +22,27 @@ struct win32_window_dimension
     int Height;
 };
 
-
-#define XInputGetState XInputGetState_;
 #define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
 typedef X_INPUT_GET_STATE(x_input_get_state);
 X_INPUT_GET_STATE(XInputGetStateStub) {
     return 0;
 }
-global_variable x_input_get_state *XInputGetState_;
+global_variable x_input_get_state *XInputGetState_ = XInputGetStateStub;
+#define XInputGetState XInputGetState_
 
-#define XInputSetState XInputSetState_;
 #define X_INPUT_SET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_VIBRATION *pVibration)
 typedef X_INPUT_SET_STATE(x_input_set_state);
 X_INPUT_SET_STATE(XInputSetStateStub) {
     return 0;
 }    
-global_variable x_input_set_state *XInputSetState_;
+global_variable x_input_set_state *XInputSetState_ = XInputSetStateStub;
+#define XInputSetState XInputSetState_
 
 internal void
 Win32LoadXInput(void) {
     HMODULE XInputLibrary = LoadLibrary("xinput1_3.dll");
     if(XInputLibrary) {
+        //TODO: Review how the function pointers are done and stuff. the macros and typedefs are still a bit confusing to me.   
         XInputGetState = (x_input_get_state *) GetProcAddress(XInputLibrary, "XInputGetState");
         XInputSetState = (x_input_set_state *) GetProcAddress(XInputLibrary, "XInputSetState");
     }
@@ -152,6 +152,20 @@ MainWindowCallback(HWND Window,
         {
             GlobalRunning = false;
         } break;
+
+        case WM_SYSKEYDOWN:
+        case WM_SYSKEYUP:
+        case WM_KEYDOWN:
+        case WM_KEYUP:
+        {
+            uint32_t VKCode = WParam;
+            if(VKCode == 'W') {
+                OutputDebugStringA("We are reading W\n");
+            }
+
+            // LParam & (1 << 30);
+            
+        } break;
         case WM_PAINT:
         {
             PAINTSTRUCT Paint;
@@ -243,6 +257,10 @@ WinMain(HINSTANCE Instance,
                         
                         int16_t StickX = Pad->sThumbLX;
                         int16_t StickY = Pad->sThumbLY;
+
+                        if(Down) {
+                            YOffset += 200;
+                        }
                     } else {
 
                     }

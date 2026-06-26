@@ -75,9 +75,9 @@ internal void RenderWeirdGradient(win32_offscreen_buffer *Buffer, int XOffset, i
 
         for(int X = 0; X < Buffer->Width; X++) {
 
-            uint8_t Blue  = (X + XOffset) / (Buffer->Width / 255);
-            uint8_t Green = (Y + YOffset) / (Buffer->Height / 255);
-            uint8_t Red   = ((255 - ( X + XOffset))) / (Buffer->Width / 255);
+            uint8_t Blue  = (X + XOffset);
+            uint8_t Green = (Y + YOffset); 
+            uint8_t Red   = 127;
 
             *Pixel++ = ((Red << 16) | (Green << 8) | Blue);
         }

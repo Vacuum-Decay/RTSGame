@@ -159,12 +159,65 @@ MainWindowCallback(HWND Window,
         case WM_KEYUP:
         {
             uint32_t VKCode = WParam;
-            if(VKCode == 'W') {
-                OutputDebugStringA("We are reading W\n");
-            }
+            bool WasDown = ((LParam & (1 << 30)) != 0);
+            bool IsDown = ((LParam & (1<< 31)) == 0);
 
-            // LParam & (1 << 30);
-            
+            switch(VKCode) {
+                case 'W': {
+
+                } break;
+                case 'A': {
+                    OutputDebugStringA("You are pressing the A key");
+                } break;
+                case 'S': {
+                    OutputDebugStringA("You are pressing the S key");
+                } break;
+                case 'D': {
+
+                } break;
+                case 'Q': {
+
+                } break;
+                case 'E': {
+
+                } break;
+                case VK_UP: {
+
+                } break;
+                case VK_LEFT: {
+
+                } break;
+                case VK_DOWN: {
+
+                } break;
+                case VK_RIGHT: {
+
+                } break;
+                case VK_ESCAPE: {
+
+                } break;
+                case VK_SPACE: {
+
+                } break;
+                
+                // case VK_LSHIFT:
+                case VK_SHIFT: {
+                    OutputDebugStringA("Adding to control group");
+                } break;
+
+                // case VK_LCONTROL:
+                case VK_CONTROL: {
+                    OutputDebugStringA("Creating a new control group");
+                } break;
+
+                // case VK_LMENU:
+                case VK_MENU: {
+                    OutputDebugStringA("Removing from all other control groups");
+                } break;
+                default: {
+
+                }break;
+            }            
         } break;
         case WM_PAINT:
         {

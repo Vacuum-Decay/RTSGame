@@ -3,14 +3,15 @@
     "configurations": [
         {
             "name": "Debug RTS Game",
-            "type": "cppdgb",
+            "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/app.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "console": "internalConsole",
+            "externalConsole": false,
+            "MIMode": "gdb",
             "miDebuggerPath": "C:\\mingw64\\bin\\gdb.exe"
         }
     ]

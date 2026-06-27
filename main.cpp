@@ -25,7 +25,7 @@ struct win32_window_dimension
 #define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
 typedef X_INPUT_GET_STATE(x_input_get_state);
 X_INPUT_GET_STATE(XInputGetStateStub) {
-    return 0;
+    return ERROR_DEVICE_NOT_CONNECTED;
 }
 global_variable x_input_get_state *XInputGetState_ = XInputGetStateStub;
 #define XInputGetState XInputGetState_
@@ -33,14 +33,14 @@ global_variable x_input_get_state *XInputGetState_ = XInputGetStateStub;
 #define X_INPUT_SET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_VIBRATION *pVibration)
 typedef X_INPUT_SET_STATE(x_input_set_state);
 X_INPUT_SET_STATE(XInputSetStateStub) {
-    return 0;
+    return ERROR_DEVICE_NOT_CONNECTED;
 }    
 global_variable x_input_set_state *XInputSetState_ = XInputSetStateStub;
 #define XInputSetState XInputSetState_
 
 internal void
 Win32LoadXInput(void) {
-    HMODULE XInputLibrary = LoadLibrary("xinput1_3.dll");
+    HMODULE XInputLibrary = LoadLibraryA("xinput1_3.dll");
     if(XInputLibrary) {
         //TODO: Review how the function pointers are done and stuff. the macros and typedefs are still a bit confusing to me.   
         XInputGetState = (x_input_get_state *) GetProcAddress(XInputLibrary, "XInputGetState");
@@ -76,8 +76,8 @@ internal void RenderWeirdGradient(win32_offscreen_buffer *Buffer, int XOffset, i
         for(int X = 0; X < Buffer->Width; X++) {
 
             uint8_t Blue  = (X + XOffset);
-            uint8_t Green = (Y + YOffset); 
-            uint8_t Red   = 127;
+            uint8_t Green = (Y + YOffset);
+            uint8_t Red   = 255;
 
             *Pixel++ = ((Red << 16) | (Green << 8) | Blue);
         }
@@ -107,19 +107,19 @@ internal void Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width, i
     int BitmapMemorySize = (Buffer->Width * Buffer->Height)*Buffer->BytesPerPixel;
     Buffer->Memory = VirtualAlloc(0, BitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
  
-    int Pitch = Width*Buffer->BytesPerPixel; 
+    int Pitch = Width*Buffer->BytesPerPixel;
 
     RenderWeirdGradient(Buffer, 128, 0);
 }
 
-internal void Win32UpdateWindow(HDC DeviceContext, RECT *ClientRect, win32_offscreen_buffer Buffer, int X, int Y, int Width, int Height) {
+internal void Win32UpdateWindow(HDC DeviceContext, RECT *ClientRect, win32_offscreen_buffer *Buffer, int X, int Y, int Width, int Height) {
     int WindowWidth = ClientRect->right - ClientRect->left;
     int WindowHeight = ClientRect->bottom - ClientRect->top;    
     StretchDIBits(DeviceContext,
-        0, 0, Buffer.Width, Buffer.Height,
+        0, 0, Buffer->Width, Buffer->Height,
         0, 0, WindowWidth, WindowHeight,
-        Buffer.Memory,
-        &(Buffer.Info),
+        Buffer->Memory,
+        &(Buffer->Info),
         DIB_RGB_COLORS, SRCCOPY);
 }
 
@@ -161,62 +161,77 @@ MainWindowCallback(HWND Window,
             uint32_t VKCode = WParam;
             bool WasDown = ((LParam & (1 << 30)) != 0);
             bool IsDown = ((LParam & (1<< 31)) == 0);
+            if(IsDown != WasDown) {
+                switch(VKCode) {
+                    case 'W': {
+                        
+                    } break;
+                    case 'A': {
+                        OutputDebugStringA("You are pressing the A key");
+                    } break;
+                    case 'S': {
+                        OutputDebugStringA("You are pressing the S key");
+                    } break;
+                    case 'D': {
+                        OutputDebugStringA("D key");
+                        if(IsDown) {
+                            OutputDebugStringA("IsDown");
+                        }
+                        if(WasDown) {
+                            OutputDebugStringA("WasDown");
+                        }
+                    } break;
+                    case 'Q': {
 
-            switch(VKCode) {
-                case 'W': {
+                    } break;
+                    case 'E': {
 
-                } break;
-                case 'A': {
-                    OutputDebugStringA("You are pressing the A key");
-                } break;
-                case 'S': {
-                    OutputDebugStringA("You are pressing the S key");
-                } break;
-                case 'D': {
+                    } break;
+                    case VK_UP: {
 
-                } break;
-                case 'Q': {
+                    } break;
+                    case VK_LEFT: {
 
-                } break;
-                case 'E': {
+                    } break;
+                    case VK_DOWN: {
 
-                } break;
-                case VK_UP: {
+                    } break;
+                    case VK_RIGHT: {
 
-                } break;
-                case VK_LEFT: {
+                    } break;
+                    case VK_ESCAPE: {
 
-                } break;
-                case VK_DOWN: {
+                    } break;
+                    case VK_SPACE: {
 
-                } break;
-                case VK_RIGHT: {
+                    } break;
+                    
+                    // case VK_LSHIFT:
+                    case VK_SHIFT: {
+                        OutputDebugStringA("Adding to control group");
+                    } break;
 
-                } break;
-                case VK_ESCAPE: {
+                    // case VK_LCONTROL:
+                    case VK_CONTROL: {
+                        OutputDebugStringA("Creating a new control group");
+                    } break;
 
-                } break;
-                case VK_SPACE: {
+                    // case VK_LMENU:
+                    case VK_MENU: {
+                        OutputDebugStringA("Removing from all other control groups");
+                    } break;
 
-                } break;
-                
-                // case VK_LSHIFT:
-                case VK_SHIFT: {
-                    OutputDebugStringA("Adding to control group");
-                } break;
+                    case VK_TAB: {
+                        OutputDebugStringA("Cycling through control group");
+                    }
+                    default: {
 
-                // case VK_LCONTROL:
-                case VK_CONTROL: {
-                    OutputDebugStringA("Creating a new control group");
-                } break;
-
-                // case VK_LMENU:
-                case VK_MENU: {
-                    OutputDebugStringA("Removing from all other control groups");
-                } break;
-                default: {
-
-                }break;
+                    }break;
+                }
+                bool AltKeyWasDown = ((LParam & (1 << 29)) != 0);
+                if((VKCode == VK_F4) && AltKeyWasDown) {
+                    GlobalRunning = false;
+                }
             }            
         } break;
         case WM_PAINT:
@@ -231,7 +246,7 @@ MainWindowCallback(HWND Window,
             RECT ClientRect;
             GetClientRect(Window, &ClientRect);
             
-            Win32UpdateWindow(DeviceContext, &ClientRect, GlobalBackbuffer, X, Y, Width, Height);
+            Win32UpdateWindow(DeviceContext, &ClientRect, &GlobalBackbuffer, X, Y, Width, Height);
         } break;
         default:
         {
@@ -252,7 +267,7 @@ WinMain(HINSTANCE Instance,
 ) {
     Win32LoadXInput();
 
-    WNDCLASS WindowClass = {};
+    WNDCLASSA WindowClass = {};
     WindowClass.style = CS_OWNDC|CS_HREDRAW|CS_VREDRAW;
     WindowClass.lpfnWndProc = MainWindowCallback;
     WindowClass.hInstance = Instance;
@@ -311,9 +326,6 @@ WinMain(HINSTANCE Instance,
                         int16_t StickX = Pad->sThumbLX;
                         int16_t StickY = Pad->sThumbLY;
 
-                        if(Down) {
-                            YOffset += 200;
-                        }
                     } else {
 
                     }
@@ -327,7 +339,7 @@ WinMain(HINSTANCE Instance,
                 int WindowWidth = ClientRect.right - ClientRect.left;
                 int WindowHeight = ClientRect.bottom - ClientRect.top;    
  
-                Win32UpdateWindow(DeviceContext, &ClientRect, GlobalBackbuffer, 0, 0, WindowWidth, WindowHeight);
+                Win32UpdateWindow(DeviceContext, &ClientRect, &GlobalBackbuffer, 0, 0, WindowWidth, WindowHeight);
                 ReleaseDC(Window, DeviceContext);
                 XOffset++;
                 YOffset++;

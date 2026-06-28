@@ -53,8 +53,8 @@ Win32LoadXInput(void) {
 global_variable bool GlobalRunning;
 global_variable win32_offscreen_buffer GlobalBackbuffer;
 
-internal void Win32InitDirectSound() {
-    
+internal void Win32InitDirectSound(void) {
+
 }
 
 internal win32_window_dimension

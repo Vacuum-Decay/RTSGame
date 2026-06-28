@@ -6,6 +6,8 @@
 #define global_variable static
 #define internal static
 
+typedef int32_t bool32;
+
 struct win32_offscreen_buffer
 {
     BITMAPINFO Info;
@@ -50,6 +52,10 @@ Win32LoadXInput(void) {
 
 global_variable bool GlobalRunning;
 global_variable win32_offscreen_buffer GlobalBackbuffer;
+
+internal void Win32InitDirectSound() {
+    
+}
 
 internal win32_window_dimension
 Win32GetWindowDimension(HWND Window) {
@@ -228,7 +234,7 @@ MainWindowCallback(HWND Window,
 
                     }break;
                 }
-                bool AltKeyWasDown = ((LParam & (1 << 29)) != 0);
+                bool32 AltKeyWasDown = ((LParam & (1 << 29)) != 0);
                 if((VKCode == VK_F4) && AltKeyWasDown) {
                     GlobalRunning = false;
                 }
@@ -344,8 +350,10 @@ WinMain(HINSTANCE Instance,
                 XOffset++;
                 YOffset++;
             }
+        } else {
+
         }
-    } else {
+    } else { 
 
     }
 

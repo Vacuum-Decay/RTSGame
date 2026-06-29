@@ -1,6 +1,7 @@
 #include<windows.h>
 #include<stdint.h>
 #include<xinput.h>
+#include<dsound.h>
 
 #define local_persist static
 #define global_variable static
@@ -40,6 +41,9 @@ X_INPUT_SET_STATE(XInputSetStateStub) {
 global_variable x_input_set_state *XInputSetState_ = XInputSetStateStub;
 #define XInputSetState XInputSetState_
 
+#define DIRECT_SOUND_CREATE(name) HRESULT WINAPI name(LPCGUID pcGuidDevice, LPDIRECTSOUND *ppDS, LPUNKNOWN pUnkOuter)
+typedef DIRECT_SOUND_CREATE(direct_sound_create);
+
 internal void
 Win32LoadXInput(void) {
     HMODULE XInputLibrary = LoadLibraryA("xinput1_3.dll");
@@ -54,7 +58,17 @@ global_variable bool GlobalRunning;
 global_variable win32_offscreen_buffer GlobalBackbuffer;
 
 internal void Win32InitDirectSound(void) {
+    HMODULE DirectSoundLibrary = LoadLibraryA("dsound.dll");
 
+    if(DirectSoundLibrary) {
+        direct_sound_create *DirectSoundCreate = (direct_sound_create *) GetProcAddress(DirectSoundLibrary, "DirectSound");
+    }
+    LPDIRECTSOUND DirectSound;
+    if(DirectSoundCreate && DirectSoundCreate(0, &DirectSound, 0)) {
+        
+    } else {
+        OutputDebugString("Direct sound failed to create");
+    }
 }
 
 internal win32_window_dimension

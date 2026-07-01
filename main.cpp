@@ -61,6 +61,7 @@ Win32LoadXInput(void) {
 
 global_variable bool GlobalRunning;
 global_variable win32_offscreen_buffer GlobalBackbuffer;
+global_variable LPDIRECTSOUNDBUFFER GlobalSecondaryBuffer;
 
 internal void Win32InitDirectSound(HWND Window, int32_t SamplesPerSecond, int32_t BufferSize) {
     HMODULE DirectSoundLibrary = LoadLibraryA("dsound.dll");
@@ -105,8 +106,8 @@ internal void Win32InitDirectSound(HWND Window, int32_t SamplesPerSecond, int32_
         BufferDescription.dwSize = sizeof(BufferDescription);
         BufferDescription.dwFlags = DSBCAPS_PRIMARYBUFFER;
         BufferDescription.dwBufferBytes = BufferSize;
-        LPDIRECTSOUNDBUFFER SecondaryBuffer;
-        if(SUCCEEDED(DirectSound->CreateSoundBuffer(&BufferDescription, &SecondaryBuffer, 0))) {
+        BufferDescription.lpwfxFormat = &WaveFormat;
+        if(SUCCEEDED(DirectSound->CreateSoundBuffer(&BufferDescription, &GlobalSecondaryBuffer, 0))) {
 
         } else {
 
@@ -356,9 +357,19 @@ WinMain(HINSTANCE Instance,
                 Instance,
                 0);
         if(Window != NULL) {
+            HDC DeviceContext = GetDC(Window);
+
             MSG Message;
             GlobalRunning = true;
             int XOffset = 0, YOffset = 0;
+            
+            int SamplesPerSecond = 48000;
+            int Hz = 256;
+            uint32_t RunningSampleIndex = 0;
+            int SquareWaveCounter = 0;
+            int SquareWavePeriod = SamplesPerSecond/Hz;
+            int BytesPerSample = sizeof(int16_t) * 2;
+            Win32InitDirectSound(Window, 48000, 48000*sizeof(int16_t) * 2);
             while(GlobalRunning) {
                 if( PeekMessageA(&Message, 0, 0, 0, PM_REMOVE) ) {
                     if(Message.message == WM_QUIT) GlobalRunning = false;
@@ -391,14 +402,66 @@ WinMain(HINSTANCE Instance,
                         int16_t StickX = Pad->sThumbLX;
                         int16_t StickY = Pad->sThumbLY;
 
+                        XOffset++;
+                        YOffset++;
                     } else {
 
                     }
                 }
 
                 RenderWeirdGradient(&GlobalBackbuffer, XOffset, YOffset);
-                
-                HDC DeviceContext = GetDC(Window);
+
+                DWORD PlayCursor;
+                DWORD WriteCursor;
+                if(SUCCEEDED(GetCurrentPosition(&PlayCursor, &WriteCursor))) {
+                    DWORD WritePointer = ;
+                    DWORD BytesToWrite = ;
+
+                    VOID *Region1;
+                    DWORD Region1Size;
+                    VOID *Region2;
+                    DWORD Region2Size;
+
+                    DWORD ByteToLock = RunningSampleIndex * BytesPerSample % BufferSize;
+                    DWORD BytesToWrite;
+                    if(BytesToLock > PlayCursor) {
+                        BytesToWrite = SecondaryBufferSize - ByteToLock;
+                    }
+
+                    if(SUCCEEDED(GlobalSecondaryBuffer->Lock(WritePointer, BytesToWrite,
+                                                &Region1, &Region1Size,
+                                                &Region2, &Region2Size, 0))) {
+                        int16_t *SampleOut = (int16_t *)Region1;
+                        DWORD Region1SampleCount = Region1Size/BytesPerSample;
+                        DWORD Region2SampleCount = Region2Size/BytesPerSample;
+                        for(DWORD SampleIndex = 0;
+                            SampleIndex < Region1Size;
+                            ++SampleIndex) {
+                            
+                            if(SquareWaveCounter) SquareWaveCounter = SquareWavePeriod;
+
+                            int16_t SampleValue = (SquareWaveCounter > (SquareWavePeriod/2)) ? 16000: -16000;
+                            *SampleOut++ = LEFT;
+                            *SampleOut++ = RIGHT;
+                            --SquareWaveCounter;
+                        }
+                        for(DWORD SampleIndex = 0;
+                            SampleIndex < Region2Size;
+                            ++SampleIndex) {
+
+                            if(SquareWaveCounter) SquareWaveCounter = SquareWavePeriod;
+
+                            int16_t SampleValue = (SquareWaveCounter > (SquareWavePeriod/2)) ? 16000: -16000;
+                            *SampleOut++ = LEFT;
+                            *SampleOut++ = RIGHT;
+                            --SquareWaveCounter;
+                        }
+                    } else {
+
+                    }
+                } else {
+
+                }
                 RECT ClientRect;
                 GetClientRect(Window, &ClientRect);
                 int WindowWidth = ClientRect.right - ClientRect.left;
@@ -406,8 +469,6 @@ WinMain(HINSTANCE Instance,
  
                 Win32UpdateWindow(DeviceContext, &ClientRect, &GlobalBackbuffer, 0, 0, WindowWidth, WindowHeight);
                 ReleaseDC(Window, DeviceContext);
-                XOffset++;
-                YOffset++;
             }
         } else {
 

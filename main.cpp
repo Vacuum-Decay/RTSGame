@@ -67,23 +67,24 @@ internal void Win32InitDirectSound(HWND Window, int32_t SamplesPerSecond, int32_
     HMODULE DirectSoundLibrary = LoadLibraryA("dsound.dll");
 
     if(DirectSoundLibrary) {
-        direct_sound_create *DirectSoundCreate = (direct_sound_create *) GetProcAddress(DirectSoundLibrary, "DirectSound");
+        direct_sound_create *DirectSoundCreate = (direct_sound_create *) GetProcAddress(DirectSoundLibrary, "DirectSoundCreate");
         LPDIRECTSOUND DirectSound;
         if(DirectSoundCreate && SUCCEEDED(DirectSoundCreate(0, &DirectSound, 0))) {
             WAVEFORMATEX WaveFormat = {};
             WaveFormat.wFormatTag = WAVE_FORMAT_PCM;
             WaveFormat.nChannels = 2;
             WaveFormat.nSamplesPerSec = SamplesPerSecond;
-            WaveFormat.nAvgBytesPerSec = WaveFormat.nSamplesPerSec * WaveFormat.nBlockAlign;
-            WaveFormat.nBlockAlign = (WaveFormat.nChannels * WaveFormat.wBitsPerSample) / 8;
             WaveFormat.wBitsPerSample = 16;
+            WaveFormat.nBlockAlign = (WaveFormat.nChannels * WaveFormat.wBitsPerSample) / 8;
+            //This fucking line was declared+initialized before nBlockAlign was declared. Stupid.
+            WaveFormat.nAvgBytesPerSec = WaveFormat.nSamplesPerSec * WaveFormat.nBlockAlign;
             WaveFormat.cbSize = 0;
     
             if(SUCCEEDED(DirectSound->SetCooperativeLevel(Window, DSSCL_PRIORITY))) {
-                DSBUFFERDESC BufferDescription = {sizeof(BufferDescription)};
+                DSBUFFERDESC BufferDescription = {};
                 BufferDescription.dwSize = sizeof(BufferDescription);
                 BufferDescription.dwFlags = DSBCAPS_PRIMARYBUFFER;
-                BufferDescription.dwBufferBytes = DSBCAPS_PRIMARYBUFFER;
+                // BufferDescription.dwBufferBytes = DSBCAPS_PRIMARYBUFFER;
                 
                 LPDIRECTSOUNDBUFFER PrimaryBuffer;
                 if(SUCCEEDED(DirectSound->CreateSoundBuffer(&BufferDescription, &PrimaryBuffer, 0))) {
@@ -103,11 +104,11 @@ internal void Win32InitDirectSound(HWND Window, int32_t SamplesPerSecond, int32_
     
             DSBUFFERDESC BufferDescription = {};
             BufferDescription.dwSize = sizeof(BufferDescription);
-            BufferDescription.dwFlags = DSBCAPS_PRIMARYBUFFER;
+            BufferDescription.dwFlags = 0;
             BufferDescription.dwBufferBytes = BufferSize;
             BufferDescription.lpwfxFormat = &WaveFormat;
             if(SUCCEEDED(DirectSound->CreateSoundBuffer(&BufferDescription, &GlobalSecondaryBuffer, 0))) {
-    
+                OutputDebugStringA("Created the global secondary buffer.");
             } else {
     
             }
@@ -167,8 +168,6 @@ internal void Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width, i
     Buffer->Info.bmiHeader.biBitCount = 32;
     Buffer->Info.bmiHeader.biCompression = BI_RGB;
 
-    // The line below was an error. Initialized to a local variable instead of the global one.
-    // int BytesPerPixel = 4;
     Buffer->BytesPerPixel = 4;
     int BitmapMemorySize = (Buffer->Width * Buffer->Height)*Buffer->BytesPerPixel;
     Buffer->Memory = VirtualAlloc(0, BitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
@@ -356,30 +355,35 @@ WinMain(HINSTANCE Instance,
                 0,
                 Instance,
                 0);
-        if(Window != NULL) {
+        if(Window) {
             HDC DeviceContext = GetDC(Window);
 
-            MSG Message;
-            GlobalRunning = true;
             int XOffset = 0, YOffset = 0;
             
             int SamplesPerSecond = 48000;
             int ToneHz = 256;
+            int16_t ToneVolume = 3000;
             uint32_t RunningSampleIndex = 0;
-            int SquareWaveCounter = 0;
             int SquareWavePeriod = SamplesPerSecond/ToneHz;
             int HalfSquareWavePeriod = SquareWavePeriod / 2;
             int BytesPerSample = sizeof(int16_t) * 2;
             int SecondaryBufferSize = SamplesPerSecond*BytesPerSample;
-
+            
             Win32InitDirectSound(Window, SamplesPerSecond, SecondaryBufferSize);
+            if(GlobalSecondaryBuffer) GlobalSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
+            
+            GlobalRunning = true;
             while(GlobalRunning) {
+                MSG Message;
                 if( PeekMessageA(&Message, 0, 0, 0, PM_REMOVE) ) {
                     if(Message.message == WM_QUIT) GlobalRunning = false;
 
                     TranslateMessage(&Message);
                     DispatchMessageA(&Message);
                 }
+
+                XOffset++;
+                YOffset++;
 
                 for(DWORD ControllerIndex = 0;
                     ControllerIndex < XUSER_MAX_COUNT;
@@ -404,11 +408,8 @@ WinMain(HINSTANCE Instance,
                         
                         int16_t StickX = Pad->sThumbLX;
                         int16_t StickY = Pad->sThumbLY;
-
-                        XOffset++;
-                        YOffset++;
                     } else {
-                        OutputDebugString("XInputGetStateController failed.");
+                        // OutputDebugString("XInputGetStateController failed.");
                     }
                 }
 
@@ -416,11 +417,16 @@ WinMain(HINSTANCE Instance,
 
                 DWORD PlayCursor;
                 DWORD WriteCursor;
-                if(SUCCEEDED(GlobalSecondaryBuffer->GetCurrentPosition(&PlayCursor, &WriteCursor))) {
+                if(GlobalSecondaryBuffer && SUCCEEDED(GlobalSecondaryBuffer->GetCurrentPosition(&PlayCursor, &WriteCursor))) {
+                /**Line above was recommended by gemini. The rationale is that the first condition makes sure that globalSecondaryBuffer is initialized.
+                However, this is not how it was done in the video.*/
+                // if(SUCCEEDED(GlobalSecondaryBuffer->GetCurrentPosition(&PlayCursor, &WriteCursor))) {
                     DWORD ByteToLock = (RunningSampleIndex * BytesPerSample) % SecondaryBufferSize;
                     DWORD BytesToWrite;
 
-                    if(ByteToLock > PlayCursor) { 
+                    if(ByteToLock == PlayCursor) {
+                        BytesToWrite = SecondaryBufferSize;
+                    } else if(ByteToLock > PlayCursor) { 
                         BytesToWrite = SecondaryBufferSize - ByteToLock;
                         BytesToWrite += PlayCursor;
                     } else {
@@ -440,7 +446,7 @@ WinMain(HINSTANCE Instance,
                         for(DWORD SampleIndex = 0;
                             SampleIndex < Region1SampleCount;
                             ++SampleIndex) {
-                                int16_t SampleValue = ((RunningSampleIndex++ / HalfSquareWavePeriod) % 2) ? 16000: -16000;
+                                int16_t SampleValue = ((RunningSampleIndex++ / HalfSquareWavePeriod) % 2) ? ToneVolume: -ToneVolume;
                                 *SampleOut++ = SampleValue;
                                 *SampleOut++ = SampleValue;
                             }
@@ -450,7 +456,7 @@ WinMain(HINSTANCE Instance,
                         for(DWORD SampleIndex = 0;
                             SampleIndex < Region2SampleCount;
                             ++SampleIndex) {
-                            int16_t SampleValue = ((RunningSampleIndex++ / HalfSquareWavePeriod) % 2) ? 16000: -16000;
+                            int16_t SampleValue = ((RunningSampleIndex++ / HalfSquareWavePeriod) % 2) ? ToneVolume: -ToneVolume;
                             *SampleOut++ = SampleValue;
                             *SampleOut++ = SampleValue;
                         }

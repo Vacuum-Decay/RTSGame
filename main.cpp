@@ -2,10 +2,12 @@
 #include<stdint.h>
 #include<xinput.h>
 #include<dsound.h>
+#include<math.h>
 
 #define local_persist static
 #define global_variable static
 #define internal static
+#define PIf 3.14159265359f
 
 typedef int32_t bool32;
 
@@ -446,9 +448,12 @@ WinMain(HINSTANCE Instance,
                         for(DWORD SampleIndex = 0;
                             SampleIndex < Region1SampleCount;
                             ++SampleIndex) {
-                                int16_t SampleValue = ((RunningSampleIndex++ / HalfSquareWavePeriod) % 2) ? ToneVolume: -ToneVolume;
+                                float t = 2.0f * PIf * (float) RunningSampleIndex / (float)WavePeriod;
+                                float SineValue = sinf(t);
+                                int16_t SampleValue = (int16) (SineValue * ToneValue)
                                 *SampleOut++ = SampleValue;
                                 *SampleOut++ = SampleValue;
+                                ++RunningSampleIndex;
                             }
                             
                         DWORD Region2SampleCount = Region2Size/BytesPerSample;
@@ -456,9 +461,12 @@ WinMain(HINSTANCE Instance,
                         for(DWORD SampleIndex = 0;
                             SampleIndex < Region2SampleCount;
                             ++SampleIndex) {
-                            int16_t SampleValue = ((RunningSampleIndex++ / HalfSquareWavePeriod) % 2) ? ToneVolume: -ToneVolume;
-                            *SampleOut++ = SampleValue;
-                            *SampleOut++ = SampleValue;
+                                float t = 2.0f * PIf * (float) RunningSampleIndex / (float)WavePeriod;
+                                float SineValue = sinf(t);
+                                int16_t SampleValue = (int16) (SineValue * ToneValue);
+                                *SampleOut++ = SampleValue;
+                                *SampleOut++ = SampleValue;
+                                ++RunningSampleIndex;
                         }
 
                         GlobalSecondaryBuffer->Unlock(Region1, Region1Size, Region2, Region2Size);

@@ -55,7 +55,6 @@ internal void
 Win32LoadXInput(void) {
     HMODULE XInputLibrary = LoadLibraryA("xinput1_3.dll");
     if(XInputLibrary) {
-        //TODO: Review how the function pointers are done and stuff. the macros and typedefs are still a bit confusing to me.   
         XInputGetState = (x_input_get_state *) GetProcAddress(XInputLibrary, "XInputGetState");
         XInputSetState = (x_input_set_state *) GetProcAddress(XInputLibrary, "XInputSetState");
     }
@@ -383,6 +382,10 @@ WinMain(HINSTANCE Instance,
         LPSTR CmdLine,
         int ShowCode
 ) {
+    LARGE_INTEGER PerfCountFrequencyResult;
+    QueryPerformanceFrequency(&PerfCountFrequencyResult);
+    int64_t PerfCountFrequency = PerfCountFrequencyResult.QuadPart;
+    
     Win32LoadXInput();
 
     WNDCLASSA WindowClass = {};
@@ -428,8 +431,14 @@ WinMain(HINSTANCE Instance,
             bool32 SoundIsPlaying = false;
             if(GlobalSecondaryBuffer) GlobalSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
             
+            LARGE_INTEGER LastCounter;
+            QueryPerformanceCounter(&LastCounter);
+            
             GlobalRunning = true;
             while(GlobalRunning) {
+                LARGE_INTEGER BeginCounter;
+                QueryPerformanceCounter(&BeginCounter);
+
                 MSG Message;
                 if( PeekMessageA(&Message, 0, 0, 0, PM_REMOVE) ) {
                     if(Message.message == WM_QUIT) GlobalRunning = false;
@@ -496,6 +505,18 @@ WinMain(HINSTANCE Instance,
                 int WindowHeight = ClientRect.bottom - ClientRect.top;    
  
                 Win32UpdateWindow(DeviceContext, &ClientRect, &GlobalBackbuffer, 0, 0, WindowWidth, WindowHeight);
+                
+                LARGE_INTEGER EndCounter;
+                QueryPerformanceCounter(&EndCounter);
+
+                int64_t CounterElapsed = EndCounter.QuadPart - LastCounter.QuadPart;
+                int64_t MSPerFrame = ((1000*CounterElapsed) / PerfCountFrequency); 
+
+                char Buffer[256];
+                wsprintf(Buffer, "Milliseconds/frame: %dms", MSPerFrame);
+                OutputDebugStringA(Buffer);
+
+                LastCounter = EndCounter;
             }
             ReleaseDC(Window, DeviceContext);
         } else {

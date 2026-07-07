@@ -77,7 +77,6 @@ internal void Win32InitDirectSound(HWND Window, int32_t SamplesPerSecond, int32_
             WaveFormat.nSamplesPerSec = SamplesPerSecond;
             WaveFormat.wBitsPerSample = 16;
             WaveFormat.nBlockAlign = (WaveFormat.nChannels * WaveFormat.wBitsPerSample) / 8;
-            //This fucking line was declared+initialized before nBlockAlign was declared. Stupid.
             WaveFormat.nAvgBytesPerSec = WaveFormat.nSamplesPerSec * WaveFormat.nBlockAlign;
             WaveFormat.cbSize = 0;
     
@@ -85,7 +84,6 @@ internal void Win32InitDirectSound(HWND Window, int32_t SamplesPerSecond, int32_
                 DSBUFFERDESC BufferDescription = {};
                 BufferDescription.dwSize = sizeof(BufferDescription);
                 BufferDescription.dwFlags = DSBCAPS_PRIMARYBUFFER;
-                // BufferDescription.dwBufferBytes = DSBCAPS_PRIMARYBUFFER;
                 
                 LPDIRECTSOUNDBUFFER PrimaryBuffer;
                 if(SUCCEEDED(DirectSound->CreateSoundBuffer(&BufferDescription, &PrimaryBuffer, 0))) {
@@ -431,10 +429,12 @@ WinMain(HINSTANCE Instance,
             bool32 SoundIsPlaying = false;
             if(GlobalSecondaryBuffer) GlobalSecondaryBuffer->Play(0, 0, DSBPLAY_LOOPING);
             
+            GlobalRunning = true;
+
             LARGE_INTEGER LastCounter;
             QueryPerformanceCounter(&LastCounter);
-            
-            GlobalRunning = true;
+
+            int64_t LastCycleCount = __rdtsc();
             while(GlobalRunning) {
                 LARGE_INTEGER BeginCounter;
                 QueryPerformanceCounter(&BeginCounter);
@@ -509,14 +509,22 @@ WinMain(HINSTANCE Instance,
                 LARGE_INTEGER EndCounter;
                 QueryPerformanceCounter(&EndCounter);
 
-                int64_t CounterElapsed = EndCounter.QuadPart - LastCounter.QuadPart;
-                int64_t MSPerFrame = ((1000*CounterElapsed) / PerfCountFrequency); 
+                int64_t EndCycleCount = __rdtsc();
 
+                int64_t CyclesElapsed = EndCycleCount - LastCycleCount;
+                int64_t CounterElapsed = EndCounter.QuadPart - LastCounter.QuadPart;
+                int32_t MSPerFrame = (int32_t)((1000*CounterElapsed) / PerfCountFrequency); 
+                int32_t FPS = PerfCountFrequency / CounterElapsed;
+                int32_t MegaCyclesPerFrame = CyclesElapsed / (1000 * 1000);
+
+                //This code is potentially dangerous, could have buffer overflows. Only use 
+                //wsprintf for code on your own machine.
                 char Buffer[256];
-                wsprintf(Buffer, "Milliseconds/frame: %dms", MSPerFrame);
+                wsprintf(Buffer, "Milliseconds/frame: %dms/f. FPS  %df/s. Megacycles per frame %d megacycles/f.", MSPerFrame, FPS, MegaCyclesPerFrame);
                 OutputDebugStringA(Buffer);
 
                 LastCounter = EndCounter;
+                LastCycleCount = EndCycleCount;
             }
             ReleaseDC(Window, DeviceContext);
         } else {

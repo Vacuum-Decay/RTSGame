@@ -1,7 +1,7 @@
 @echo Started: %date% %time%
 @echo off
 echo Compiling...
-g++ -g main.cpp -o app.exe -mwindows -lgdi32
+g++ -g win32_main.cpp -o app.exe -mwindows -lgdi32
 
 if %errorlevel% equ 0 (
     echo Success! Running app...

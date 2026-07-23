@@ -9,6 +9,8 @@
 #define internal static
 #define PI_f 3.14159265359f
 
+#include "RTS.cpp"
+
 typedef int32_t bool32;
 
 struct win32_offscreen_buffer
@@ -373,6 +375,16 @@ internal void Win32FillSoundBuffer(win32_sound_output *SoundOutput, DWORD ByteTo
 
     }
 }
+
+struct platform_window {
+    HWND Handle;
+};
+
+//TODO: This
+// platform_window *
+// PlatformOpenWindow(char *Title) {
+
+// }
 
 int CALLBACK 
 WinMain(HINSTANCE Instance,

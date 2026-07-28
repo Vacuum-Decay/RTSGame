@@ -379,12 +379,50 @@ internal void Win32FillSoundBuffer(win32_sound_output *SoundOutput, DWORD ByteTo
 struct platform_window {
     HWND Handle;
 };
+game_context Context;
 
-//TODO: This
-// platform_window *
-// PlatformOpenWindow(char *Title) {
+platform_window *
+PlatformOpenWindow(const char *Title) {
+    platform_window *Result = (platform_window *)VirtualAlloc(0, sizeof(platform_window), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    if(Result) {
+        Result->Handle = CreateWindowExA(
+            0,
+            "RTSWindowClass",
+            Title,
+            WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+            CW_USEDEFAULT,
+            CW_USEDEFAULT,
+            CW_USEDEFAULT,
+            CW_USEDEFAULT,
+            0,
+            0,
+            GetModuleHandle(0),
+            0);
+    }
+    return Result;
+}
 
-// }
+void PlatformCloseWindow(platform_window *Window) {
+    if(Window) {
+        CloseWindow(Window->Handle);
+    }
+}
+
+struct platform_sound_device {
+    LPDIRECTSOUNDBUFFER SecondaryBuffer;
+};
+
+platform_sound_device *PlatformOpenSoundDevice(void) {
+    platform_sound_device *Result = (platform_sound_device *) VirtualAlloc(0, sizeof(platform_sound_device), MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    if(Result) {
+        Result->SecondaryBuffer = GlobalSecondaryBuffer;
+    }
+    return Result;
+}
+
+void PlatformCloseSoundDevice(platform_sound_device *Device) {
+    if(Device) VirtualFree(Device, 0, MEM_RELEASE);
+}
 
 int CALLBACK 
 WinMain(HINSTANCE Instance,
@@ -398,11 +436,12 @@ WinMain(HINSTANCE Instance,
     
     Win32LoadXInput();
 
+    GameMain(&Context);
+
     WNDCLASSA WindowClass = {};
     WindowClass.style = CS_OWNDC|CS_HREDRAW|CS_VREDRAW;
     WindowClass.lpfnWndProc = MainWindowCallback;
     WindowClass.hInstance = Instance;
-    WindowClass.hIcon;
     WindowClass.hCursor = NULL;
     WindowClass.lpszClassName = "RTSWindowClass";
 

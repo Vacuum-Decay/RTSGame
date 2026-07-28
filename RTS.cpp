@@ -1,10 +1,12 @@
-#if !defined(RTS_H)
-
 #include "RTS.h"
 
-struct platform_window;
-platform_window *PlatformOpenWindow(char *Title);
-void PlatformCloseWindow(platform_window *Window);
+void GameMain(game_context *Context) {
+    const char *Title = "RTS Game";
+    Context->Window = PlatformOpenWindow(Title);
+    Context->Device = PlatformOpenSoundDevice();
+}
 
-#define RTS_H
-#endif
+void GameShutdown(game_context *Context) {
+    PlatformCloseWindow(Context->Window);
+    PlatformCloseSoundDevice(Context->Device);
+}

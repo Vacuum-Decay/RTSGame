@@ -379,7 +379,6 @@ internal void Win32FillSoundBuffer(win32_sound_output *SoundOutput, DWORD ByteTo
 struct platform_window {
     HWND Handle;
 };
-game_context Context;
 
 platform_window *
 PlatformOpenWindow(const char *Title) {
@@ -436,7 +435,6 @@ WinMain(HINSTANCE Instance,
     
     Win32LoadXInput();
 
-    GameMain(&Context);
 
     WNDCLASSA WindowClass = {};
     WindowClass.style = CS_OWNDC|CS_HREDRAW|CS_VREDRAW;
@@ -529,6 +527,7 @@ WinMain(HINSTANCE Instance,
                     }
                 }
 
+                
                 RenderWeirdGradient(&GlobalBackbuffer, XOffset, YOffset);
 
                 DWORD PlayCursor;
@@ -568,12 +567,13 @@ WinMain(HINSTANCE Instance,
                 int32_t FPS = PerfCountFrequency / CounterElapsed;
                 int32_t MegaCyclesPerFrame = CyclesElapsed / (1000 * 1000);
 
+#if 0
                 //This code is potentially dangerous, could have buffer overflows. Only use 
                 //wsprintf for code on your own machine.
                 char Buffer[256];
                 wsprintf(Buffer, "Milliseconds/frame: %dms/f. FPS  %df/s. Megacycles per frame %d megacycles/f.", MSPerFrame, FPS, MegaCyclesPerFrame);
                 OutputDebugStringA(Buffer);
-
+#endif
                 LastCounter = EndCounter;
                 LastCycleCount = EndCycleCount;
             }

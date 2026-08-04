@@ -131,28 +131,6 @@ Win32GetWindowDimension(HWND Window) {
     return Result;
 }
 
-internal void RenderWeirdGradient(win32_offscreen_buffer *Buffer, int XOffset, int YOffset) {
-    int Width = Buffer->Width;
-    int Height = Buffer->Height;
-
-    int Pitch = Width*Buffer->BytesPerPixel;
-    uint8_t *Row = (uint8_t *) Buffer->Memory;
-    for(int Y = 0; Y < Buffer->Height; Y++) {
-        
-        uint32_t *Pixel = (uint32_t *) Row;
-
-        for(int X = 0; X < Buffer->Width; X++) {
-
-            uint8_t Blue  = (X + XOffset);
-            uint8_t Green = (Y + YOffset);
-            uint8_t Red   = 255;
-
-            *Pixel++ = ((Red << 16) | (Green << 8) | Blue);
-        }
-        Row += Pitch;
-    }
-}
-
 internal void Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width, int Height) {
 
     if(Buffer->Memory) {
@@ -173,17 +151,17 @@ internal void Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width, i
     int BitmapMemorySize = (Buffer->Width * Buffer->Height)*Buffer->BytesPerPixel;
     Buffer->Memory = VirtualAlloc(0, BitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
  
-    int Pitch = Width*Buffer->BytesPerPixel;
-
-    RenderWeirdGradient(Buffer, 128, 0);
+    Buffer->Pitch = Width*Buffer->BytesPerPixel;
+    
+    // RenderWeirdGradient(Buffer, 128, 0);
 }
 
 internal void Win32UpdateWindow(HDC DeviceContext, RECT *ClientRect, win32_offscreen_buffer *Buffer, int X, int Y, int Width, int Height) {
     int WindowWidth = ClientRect->right - ClientRect->left;
     int WindowHeight = ClientRect->bottom - ClientRect->top;    
     StretchDIBits(DeviceContext,
-        0, 0, Buffer->Width, Buffer->Height,
         0, 0, WindowWidth, WindowHeight,
+        0, 0, Buffer->Width, Buffer->Height,
         Buffer->Memory,
         &(Buffer->Info),
         DIB_RGB_COLORS, SRCCOPY);
@@ -333,6 +311,7 @@ struct win32_sound_output {
     int WavePeriod;
     int BytesPerSample;
     int SecondaryBufferSize;
+    int LatencySampleCount;
 };
 
 internal void Win32FillSoundBuffer(win32_sound_output *SoundOutput, DWORD ByteToLock, DWORD BytesToWrite) {
@@ -527,22 +506,29 @@ WinMain(HINSTANCE Instance,
                     }
                 }
 
-                
-                RenderWeirdGradient(&GlobalBackbuffer, XOffset, YOffset);
+                game_offscreen_buffer Buffer = {};
+                Buffer.Memory = GlobalBackbuffer.Memory;
+                Buffer.Height = GlobalBackbuffer.Height;
+                Buffer.Width = GlobalBackbuffer.Width;
+                Buffer.Pitch = GlobalBackbuffer.Pitch;
+                Buffer.BytesPerPixel = GlobalBackbuffer.BytesPerPixel;
+                GameUpdateAndRender(&Buffer, XOffset, YOffset);
+                // RenderWeirdGradient(&GlobalBackbuffer, XOffset, YOffset);
 
                 DWORD PlayCursor;
                 DWORD WriteCursor;
                 if(SUCCEEDED(GlobalSecondaryBuffer->GetCurrentPosition(&PlayCursor, &WriteCursor))) {
                     DWORD ByteToLock = (SoundOutput.RunningSampleIndex * SoundOutput.BytesPerSample) % SoundOutput.SecondaryBufferSize;
+
+                    DWORD TargetCursor = 
+                    ((PlayCursor + SoundOutput.LatencySampleCount * SoundOutput.BytesPerSample)) % SoundOutput.SecondaryBufferSize;
                     DWORD BytesToWrite;
 
-                    if(ByteToLock == PlayCursor) {
-                        BytesToWrite = 0;
-                    } else if(ByteToLock > PlayCursor) { 
+                    if(ByteToLock > TargetCursor) { 
                         BytesToWrite = SoundOutput.SecondaryBufferSize - ByteToLock;
-                        BytesToWrite += PlayCursor;
+                        BytesToWrite += TargetCursor;
                     } else {
-                        BytesToWrite = PlayCursor - ByteToLock;
+                        BytesToWrite = TargetCursor - ByteToLock;
                     }
                     Win32FillSoundBuffer(&SoundOutput, ByteToLock, BytesToWrite);
 

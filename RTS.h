@@ -1,6 +1,15 @@
-#if !defined(HANDMADE_H)
+#if !defined(RTS_H)
 
-void GameUpdateAndRender();
+struct game_offscreen_buffer
+{
+    BITMAPINFO Info;
+    void *Memory;
+    int Width;
+    int Height;
+    int Pitch;
+    int BytesPerPixel;
+};
+internal void GameUpdateAndRender(game_offscreen_buffer *Buffer, int XOffset, int YOffset);
 
-#define HANDMADE_H
+#define RTS_H
 #endif

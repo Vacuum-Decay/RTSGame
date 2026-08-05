@@ -1,8 +1,5 @@
 #include<windows.h>
 #include<stdint.h>
-#include<xinput.h>
-#include<dsound.h>
-#include<math.h>
 
 #define local_persist static
 #define global_variable static
@@ -12,6 +9,10 @@
 #include "RTS.cpp"
 
 typedef int32_t bool32;
+
+#include<xinput.h>
+#include<dsound.h>
+#include<math.h>
 
 struct win32_offscreen_buffer
 {
@@ -323,8 +324,8 @@ internal void Win32FillSoundBuffer(win32_sound_output *SoundOutput, DWORD ByteTo
     if(SUCCEEDED(GlobalSecondaryBuffer->Lock(ByteToLock, BytesToWrite,
                                 &Region1, &Region1Size,
                                 &Region2, &Region2Size, 0))) {
-        int16_t *SampleOut = (int16_t *)Region1;
         DWORD Region1SampleCount = Region1Size/SoundOutput->BytesPerSample;
+        int16_t *SampleOut = (int16_t *)Region1;
         for(DWORD SampleIndex = 0;
             SampleIndex < Region1SampleCount;
             ++SampleIndex) {
@@ -334,7 +335,7 @@ internal void Win32FillSoundBuffer(win32_sound_output *SoundOutput, DWORD ByteTo
                 *SampleOut++ = SampleValue;
                 *SampleOut++ = SampleValue;
                 ++SoundOutput->RunningSampleIndex;
-            }
+        }
             
         DWORD Region2SampleCount = Region2Size/SoundOutput->BytesPerSample;
         SampleOut = (int16_t *) Region2;
@@ -506,13 +507,15 @@ WinMain(HINSTANCE Instance,
                     }
                 }
 
+                game_sound_output_buffer SoundBuffer = {};
+
                 game_offscreen_buffer Buffer = {};
                 Buffer.Memory = GlobalBackbuffer.Memory;
                 Buffer.Height = GlobalBackbuffer.Height;
                 Buffer.Width = GlobalBackbuffer.Width;
-                Buffer.Pitch = GlobalBackbuffer.Pitch;
+                Buffer.Pitch =   GlobalBackbuffer.Pitch;
                 Buffer.BytesPerPixel = GlobalBackbuffer.BytesPerPixel;
-                GameUpdateAndRender(&Buffer, XOffset, YOffset);
+                GameUpdateAndRender(&Buffer, XOffset, YOffset, &SoundBuffer);
                 // RenderWeirdGradient(&GlobalBackbuffer, XOffset, YOffset);
 
                 DWORD PlayCursor;

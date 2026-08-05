@@ -1,6 +1,29 @@
 #if !defined RTS_H
+#include<math.h>
 #include "RTS.h"
 
+// {
+// int16_t *SampleOut = (int16_t *)Region1;
+// }
+
+internal void GameOutputSound(game_sound_output_buffer *SoundBuffer) {
+    local_persist float tSine;
+    int16_t toneVolume = 3000;
+    int toneHz = 256;
+    int WavePeriod = SoundBuffer->SamplesPerSecond/toneHz;
+
+    int16_t *SampleOut = SoundBuffer->Samples;
+    for(int SampleIndex = 0;
+        SampleIndex < SoundBuffer->SampleCount;
+        ++SampleIndex) {
+            float SineValue = sinf(tSine);
+            int16_t SampleValue = (int16_t) (SineValue * toneVolume);
+            *SampleOut++ = SampleValue;
+            *SampleOut++ = SampleValue;
+
+            tSine += 2.0f *3.14159265359f / (float) WavePeriod;
+    }
+}
 
 internal void RenderWeirdGradient(game_offscreen_buffer *Buffer, int XOffset, int YOffset) {
     int Width = Buffer->Width;
@@ -24,7 +47,8 @@ internal void RenderWeirdGradient(game_offscreen_buffer *Buffer, int XOffset, in
     }
 }
 
-internal void GameUpdateAndRender(game_offscreen_buffer *Buffer, int XOffset, int YOffset) {
+internal void GameUpdateAndRender(game_offscreen_buffer *Buffer, int XOffset, int YOffset, game_sound_output_buffer *SoundBuffer) {
+    GameOutputSound(SoundBuffer);
     RenderWeirdGradient(Buffer, XOffset, YOffset);
 }
 

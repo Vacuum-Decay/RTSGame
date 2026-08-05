@@ -1,4 +1,5 @@
 #if !defined(RTS_H)
+#include<stdint.h>
 
 struct game_offscreen_buffer
 {
@@ -9,7 +10,14 @@ struct game_offscreen_buffer
     int Pitch;
     int BytesPerPixel;
 };
-internal void GameUpdateAndRender(game_offscreen_buffer *Buffer, int XOffset, int YOffset);
+
+struct game_sound_output_buffer {
+    int SamplesPerSecond;
+    int SampleCount;
+    int16_t *Samples;
+};
+
+internal void GameUpdateAndRender(game_offscreen_buffer *Buffer, int XOffset, int YOffset, game_sound_output_buffer *SoundBuffer);
 
 #define RTS_H
 #endif

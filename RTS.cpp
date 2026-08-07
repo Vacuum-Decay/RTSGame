@@ -2,10 +2,6 @@
 #include<math.h>
 #include "RTS.h"
 
-// {
-// int16_t *SampleOut = (int16_t *)Region1;
-// }
-
 internal void GameOutputSound(game_sound_output_buffer *SoundBuffer, int ToneHz) {
     local_persist float tSine;
     int16_t toneVolume = 3000;
@@ -28,7 +24,7 @@ internal void RenderWeirdGradient(game_offscreen_buffer *Buffer, int XOffset, in
     int Width = Buffer->Width;
     int Height = Buffer->Height;
 
-    int Pitch = Width*Buffer->BytesPerPixel;
+    int Pitch = Width*4;
     uint8_t *Row = (uint8_t *) Buffer->Memory;
     for(int Y = 0; Y < Buffer->Height; Y++) {
         

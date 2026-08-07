@@ -17,7 +17,7 @@ struct game_sound_output_buffer {
     int16_t *Samples;
 };
 
-internal void GameUpdateAndRender(game_offscreen_buffer *Buffer, int XOffset, int YOffset, game_sound_output_buffer *SoundBuffer);
+internal void GameUpdateAndRender(game_offscreen_buffer *Buffer, int XOffset, int YOffset, game_sound_output_buffer *SoundBuffer, int ToneHz);
 
 #define RTS_H
 #endif

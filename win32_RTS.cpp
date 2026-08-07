@@ -1,5 +1,6 @@
 #include<windows.h>
 #include<stdint.h>
+#include "win32_RTS.h"
 
 #define local_persist static
 #define global_variable static
@@ -13,22 +14,6 @@ typedef int32_t bool32;
 #include<xinput.h>
 #include<dsound.h>
 #include<math.h>
-
-struct win32_offscreen_buffer
-{
-    BITMAPINFO Info;
-    void *Memory;
-    int Width;
-    int Height;
-    int Pitch;
-    int BytesPerPixel;
-};
-
-struct win32_window_dimension
-{
-    int Width;
-    int Height;
-};
 
 #define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
 typedef X_INPUT_GET_STATE(x_input_get_state);
@@ -148,12 +133,9 @@ internal void Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width, i
     Buffer->Info.bmiHeader.biBitCount = 32;
     Buffer->Info.bmiHeader.biCompression = BI_RGB;
 
-    Buffer->BytesPerPixel = 4;
-    int BitmapMemorySize = (Buffer->Width * Buffer->Height)*Buffer->BytesPerPixel;
+    int BitmapMemorySize = (Buffer->Width * Buffer->Height)*4;
     Buffer->Memory = VirtualAlloc(0, BitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
  
-    Buffer->Pitch = Width*Buffer->BytesPerPixel;
-    
     // RenderWeirdGradient(Buffer, 128, 0);
 }
 
@@ -304,19 +286,6 @@ MainWindowCallback(HWND Window,
     
 }
 
-struct win32_sound_output {
-    int SamplesPerSecond;
-    int ToneHz;
-    int16_t ToneVolume;
-    uint32_t RunningSampleIndex;
-    int WavePeriod;
-    int BytesPerSample;
-    int SecondaryBufferSize;
-    int LatencySampleCount;
-};
-
-
-
 internal void Win32FillSoundBuffer(win32_sound_output *SoundOutput, DWORD ByteToLock, DWORD BytesToWrite, game_sound_output_buffer *SourceBuffer) {
     VOID *Region1;
     DWORD Region1Size;
@@ -332,9 +301,6 @@ internal void Win32FillSoundBuffer(win32_sound_output *SoundOutput, DWORD ByteTo
         for(DWORD SampleIndex = 0;
             SampleIndex < Region1SampleCount;
             ++SampleIndex) {
-                float t = 2.0f * PI_f * (float) SoundOutput->RunningSampleIndex / (float) SoundOutput->WavePeriod;
-                float SineValue = sinf(t);
-                int16_t SampleValue = (int16_t) (SineValue * SoundOutput->ToneVolume);
                 *DestSample++ = *SourceSample++;
                 *DestSample++ = *SourceSample++;
                 ++SoundOutput->RunningSampleIndex;
@@ -345,9 +311,6 @@ internal void Win32FillSoundBuffer(win32_sound_output *SoundOutput, DWORD ByteTo
         for(DWORD SampleIndex = 0;
             SampleIndex < Region2SampleCount;
             ++SampleIndex) {
-                // float t = 2.0f * PI_f * (float) SoundOutput->RunningSampleIndex / (float) SoundOutput->WavePeriod;
-                // float SineValue = sinf(t);
-                // int16_t SampleValue = (int16_t) (SineValue * SoundOutput->ToneVolume);
                 *DestSample++ = *SourceSample++;
                 *DestSample++ = *SourceSample++;
                 ++SoundOutput->RunningSampleIndex;
@@ -466,15 +429,10 @@ WinMain(HINSTANCE Instance,
             Win32ResizeDIBSection(&GlobalBackbuffer, Dimension.Width, Dimension.Height);
             HDC DeviceContext = GetDC(Window);
 
-            int XOffset = 0, YOffset = 0;
-
             win32_sound_output SoundOutput = {};
 
             SoundOutput.SamplesPerSecond = 48000;
-            SoundOutput.ToneHz = 256;
-            SoundOutput.ToneVolume = 3000;
             SoundOutput.RunningSampleIndex = 0;
-            SoundOutput.WavePeriod = SoundOutput.SamplesPerSecond/SoundOutput.ToneHz;
             SoundOutput.BytesPerSample = sizeof(int16_t) * 2;
             SoundOutput.SecondaryBufferSize = SoundOutput.SamplesPerSecond*SoundOutput.BytesPerSample;
             SoundOutput.LatencySampleCount = SoundOutput.SamplesPerSecond / 15;
@@ -504,8 +462,6 @@ WinMain(HINSTANCE Instance,
                     DispatchMessageA(&Message);
                 }
 
-                XOffset++;
-                YOffset++;
 
                 for(DWORD ControllerIndex = 0;
                     ControllerIndex < XUSER_MAX_COUNT;
@@ -544,11 +500,8 @@ WinMain(HINSTANCE Instance,
                 Buffer.Memory = GlobalBackbuffer.Memory;
                 Buffer.Height = GlobalBackbuffer.Height;
                 Buffer.Width = GlobalBackbuffer.Width;
-                Buffer.Pitch =   GlobalBackbuffer.Pitch;
-                Buffer.BytesPerPixel = GlobalBackbuffer.BytesPerPixel;
-                // GameUpdateAndRender(&Buffer, XOffset, YOffset, &SoundBuffer);
-                // RenderWeirdGradient(&GlobalBackbuffer, XOffset, YOffset);
-
+                Buffer.Pitch = (Buffer.Width * 4);
+                
                 DWORD ByteToLock = 0;
                 DWORD BytesToWrite = 0;
                 DWORD PlayCursor = 0;
@@ -575,7 +528,7 @@ WinMain(HINSTANCE Instance,
                     SoundBuffer.SampleCount = BytesToWrite / SoundOutput.BytesPerSample;
                     SoundBuffer.Samples = Samples;
 
-                    GameUpdateAndRender(&Buffer, XOffset, YOffset, &SoundBuffer);
+                    GameUpdateAndRender(&Buffer, &SoundBuffer);
 
                     if(BytesToWrite > 0) Win32FillSoundBuffer(&SoundOutput, ByteToLock, BytesToWrite, &SoundBuffer);
 

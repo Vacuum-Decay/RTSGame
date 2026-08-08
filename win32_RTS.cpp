@@ -449,6 +449,8 @@ WinMain(HINSTANCE Instance,
             LARGE_INTEGER LastCounter;
             QueryPerformanceCounter(&LastCounter);
 
+            game_input Input;
+
             int64_t LastCycleCount = __rdtsc();
             while(GlobalRunning) {
                 LARGE_INTEGER BeginCounter;
@@ -528,7 +530,7 @@ WinMain(HINSTANCE Instance,
                     SoundBuffer.SampleCount = BytesToWrite / SoundOutput.BytesPerSample;
                     SoundBuffer.Samples = Samples;
 
-                    GameUpdateAndRender(&Buffer, &SoundBuffer);
+                    GameUpdateAndRender(&Input, &Buffer, &SoundBuffer);
 
                     if(BytesToWrite > 0) Win32FillSoundBuffer(&SoundOutput, ByteToLock, BytesToWrite, &SoundBuffer);
 

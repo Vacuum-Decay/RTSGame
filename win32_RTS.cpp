@@ -322,6 +322,11 @@ internal void Win32FillSoundBuffer(win32_sound_output *SoundOutput, DWORD ByteTo
     }
 }
 
+internal void Win32ProcessXInputDigitalButton(DWORD XInputButtonState, game_button_state *OldState, DWORD ButtonBit, game_button_state *NewState) {
+    NewState->EndedDown = ((XInputButtonState & ButtonBit) == ButtonBit);
+    NewState->HalfTransitionCount = (OldState->EndedDown != NewState->EndedDown) ? 1 : 0;
+}
+
 struct platform_window {
     HWND Handle;
 };
@@ -449,14 +454,16 @@ WinMain(HINSTANCE Instance,
             LARGE_INTEGER LastCounter;
             QueryPerformanceCounter(&LastCounter);
 
-            game_input Input;
-
+            
             int64_t LastCycleCount = __rdtsc();
             while(GlobalRunning) {
                 LARGE_INTEGER BeginCounter;
                 QueryPerformanceCounter(&BeginCounter);
-
+                
                 MSG Message;
+
+                game_input Input = {};
+
                 while( PeekMessageA(&Message, 0, 0, 0, PM_REMOVE) ) {
                     if(Message.message == WM_QUIT) GlobalRunning = false;
 
@@ -464,7 +471,7 @@ WinMain(HINSTANCE Instance,
                     DispatchMessageA(&Message);
                 }
 
-
+                int MaxControllerCount = XUSER_MAX_COUNT;
                 for(DWORD ControllerIndex = 0;
                     ControllerIndex < XUSER_MAX_COUNT;
                     ++ControllerIndex) 
@@ -476,7 +483,27 @@ WinMain(HINSTANCE Instance,
                         bool Up = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_UP);
                         bool Down = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN);
                         bool Left = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT);
-                        bool Right = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT); 
+                        bool Right = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT);
+
+                        Win32ProcessXInputDigitalButton(Pad->wButtons, 
+                                                        OldController->State, XINPUT_GAMEPAD_A,
+                                                        NewController->State);
+                        Win32ProcessXInputDigitalButton(Pad->wButtons, 
+                                                        OldController->State, XINPUT_GAMEPAD_B,
+                                                        NewController->State);
+                        Win32ProcessXInputDigitalButton(Pad->wButtons, 
+                                                        OldController->State, XINPUT_GAMEPAD_X,
+                                                        NewController->State);
+                        Win32ProcessXInputDigitalButton(Pad->wButtons, 
+                                                        OldController->State, XINPUT_GAMEPAD_Y,
+                                                        NewController->State);
+                        Win32ProcessXInputDigitalButton(Pad->wButtons, 
+                                                        OldController->State, XINPUT_GAMEPAD_LEFT_SHOULDER,
+                                                        NewController->State);
+                        Win32ProcessXInputDigitalButton(Pad->wButtons, 
+                                                        OldController->State, XINPUT_GAMEPAD_RIGHT_SHOULDER,
+                                                        NewController->State);
+
                         bool Start = (Pad->wButtons & XINPUT_GAMEPAD_START);
                         bool Back = (Pad->wButtons & XINPUT_GAMEPAD_BACK);
                         bool LeftShoulder = (Pad->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER);

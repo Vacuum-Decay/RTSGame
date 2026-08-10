@@ -2,6 +2,8 @@
 #include<stdint.h>
 #define bool32 int32_t
 
+#define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
+
 struct game_offscreen_buffer
 {
     BITMAPINFO Info;

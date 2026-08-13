@@ -519,8 +519,26 @@ WinMain(HINSTANCE Instance,
                         bool XButton = (Pad->wButtons & XINPUT_GAMEPAD_X);
                         bool YButton = (Pad->wButtons & XINPUT_GAMEPAD_Y);
                         
-                        int16_t StickX = Pad->sThumbLX;
-                        int16_t StickY = Pad->sThumbLY;
+                        NewController->IsAnalog = true;
+                        NewController->StartX = OldController->EndX;
+                        NewController->StartY = OldController->EndY;
+                        float X;
+                        if(Pad->sThumbLX < 0) {
+                            X = (float) Pad->sThumbLX / -32768.0f;
+                        } else {
+                            X = (float) Pad->sThumbLX / 322767.0f; 
+                        }
+
+                        float Y;
+                        if(Pad->sThumbLY < 0) {
+                            Y = (float) Pad->sThumbLY / -32768.0f;
+                        } else {
+                            Y = (float) Pad->sThumbLY / 322767.0f; 
+                        }
+                        NewController->MinY = NewController->MaxY = NewController->EndY = Y;
+
+                        // float StickX = (float) Pad->sThumbLX;
+                        // float StickY = (float) Pad->sThumbLY;
                     } else {
                         // OutputDebugString("XInputGetStateController failed.");
                     }
@@ -610,7 +628,6 @@ WinMain(HINSTANCE Instance,
     } else { 
 
     }
-
-     
+   
     return 0;
 }

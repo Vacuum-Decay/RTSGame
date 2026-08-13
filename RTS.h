@@ -29,9 +29,13 @@ struct game_controller_input {
 
     float StartX;
     float StartY;
+    float MinX;
+    float MaxX;
 
     float EndX;
     float EndY;
+    float MinY;
+    float MaxY;
 
     union {
         game_button_state Buttons[6];

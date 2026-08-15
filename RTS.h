@@ -54,6 +54,23 @@ struct game_input {
     game_controller_input Controllers[4];
 };
 
+struct game_memory {
+    bool32 IsInitialized;
+    
+
+    uint64_t PermanentStorageSize;
+    void     *PermanentStorage;
+
+    uint64_t TransientStorageSize;
+    void     *TransientStorage;
+};
+
+struct game_state {
+    int XOffset;
+    int YOffset;
+    int ToneHz;
+};
+
 internal void GameUpdateAndRender(game_input *Input, game_offscreen_buffer *Buffer, game_sound_output_buffer *SoundBuffer);
 
 #define RTS_H

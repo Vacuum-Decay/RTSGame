@@ -65,5 +65,9 @@ internal void GameUpdateAndRender(game_input *Input, game_offscreen_buffer *Buff
     RenderWeirdGradient(Buffer, XOffset, YOffset);
 }
 
+internal void GameUpdateAndRender(game_memory *Memory) {
+
+}
+
 #define RTS_H
 #endif

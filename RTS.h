@@ -1,6 +1,29 @@
-#if !defined(RTS_H)
+#ifndef RTS_H
 #include<stdint.h>
 #define bool32 int32_t
+
+#define Kilobytes(Value) ((Value) * 1024LL)
+#define Megabytes(Value) (Kilobytes(Value) * 1024LL)
+#define Gigabytes(Value) (Megabytes(Value) * 1024LL)
+#define Terrabytes(Value) (Gigabytes(Value) * 1024LL)
+
+#ifdef RTS_SLOW
+#define Assert(expression) if(!(expression)) {*(int*)0 = 0;}
+#else
+#define Assert(expression)
+#endif
+
+inline uint32_t SafeTruncateUInt64(uint64_t Value) {
+    Assert(Value <= 0xFFFFFFFF);
+    uint32_t Result = (uint32_t)Value;
+    return Result;
+}
+
+#if RTS_INTERNAL
+DEBUGPlatformReadEntireFile(char *Filename)
+DEBUGPlatformFreeFileMemory(void *Memory);
+internal bool32 DEBUGPlatformWriteEntireFile(char *FileName, uint32_t MemorySize, void *Memory);
+#endif
 
 #define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))
 

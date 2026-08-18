@@ -9,7 +9,7 @@
 
 #include "RTS.cpp"
 
-typedef int32_t bool32;
+typedef int32_t bool32_t;
 
 #include<xinput.h>
 #include<dsound.h>
@@ -38,6 +38,50 @@ DIRECT_SOUND_CREATE(DirectSoundCreateStub) {
 }
 global_variable direct_sound_create *DirectSoundCreate_ = DirectSoundCreateStub;
 #define DirectSoundCreate DirectSoundCreate_
+
+// internal void *
+// DEBUGPlatformReadEntireFile(char *FileName) {
+//     debug_read_file_result Result = {};
+//     HANDLE FileHandle = CreateFile(FileName, GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+
+//     LARGE_INTEGER FileSize;
+
+//     if(File != INVALID_HANDLE_VALUE) {
+//         if(GetFileSizeEx(File, &FileSize) {
+//             uint32_t FileSize32 = SafeTruncateUInt64(FileSize.QuadPart);
+//         } else {
+
+//         }
+
+//     } else {
+
+//     }
+//     return Result;
+// }
+
+internal void *
+DEBUGPlatformReadEntireFile(char *FileName) {
+    void *Result = 0;
+
+    HANDLE FileHandle = CreateFileA(FileName, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+    if(FileHandle != INVALID_HANDLE_VALUE) {
+        PLARGE_INTEGER FileSize;
+        if(GetFileSizeEx(FileHandle, FileSize)) {
+            uint32_t FileSize32 = SafeTruncateUInt64(FileSize->QuadPart);
+
+        }
+    }
+}
+
+internal void
+DEBUGPlatformFreeFileMemory(void *Memory) {
+
+}
+
+internal bool32_t
+DEBUGPlatformWriteEntireFile(char *Filename, uint32_t MemorySize, void *Memory) {
+    return true;
+}
 
 internal void
 Win32LoadXInput(void) {

@@ -59,6 +59,11 @@ global_variable direct_sound_create *DirectSoundCreate_ = DirectSoundCreateStub;
 //     return Result;
 // }
 
+internal void
+DEBUGPlatformFreeFileMemory(void *Memory) {
+
+}
+
 internal void *
 DEBUGPlatformReadEntireFile(char *FileName) {
     void *Result = 0;
@@ -68,18 +73,31 @@ DEBUGPlatformReadEntireFile(char *FileName) {
         PLARGE_INTEGER FileSize;
         if(GetFileSizeEx(FileHandle, FileSize)) {
             uint32_t FileSize32 = SafeTruncateUInt64(FileSize->QuadPart);
+            Result = VirtualAlloc(0, FileSize32, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+            if(Result) {
+                DWORD BytesRead;
+                if(ReadFile(FileHandle, Result, FileSize32, &BytesRead, 0) && (FileSize32 == BytesRead)) {
+
+                } else {
+                    DEBUGPlatformFreeFileMemory(Result);
+                }
+            } else {
+
+            }
+        } else {
 
         }
+        CloseHandle(FileHandle);
+    } else {
+
     }
-}
-
-internal void
-DEBUGPlatformFreeFileMemory(void *Memory) {
-
+    return Result;
 }
 
 internal bool32_t
 DEBUGPlatformWriteEntireFile(char *Filename, uint32_t MemorySize, void *Memory) {
+    bool32 
+
     return true;
 }
 
